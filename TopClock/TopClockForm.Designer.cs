@@ -97,6 +97,7 @@
             // g_cbxStart
             // 
             this.g_cbxStart.Appearance = System.Windows.Forms.Appearance.Button;
+            this.g_cbxStart.Enabled = false;
             this.g_cbxStart.Location = new System.Drawing.Point(36, 183);
             this.g_cbxStart.Name = "g_cbxStart";
             this.g_cbxStart.Size = new System.Drawing.Size(249, 30);

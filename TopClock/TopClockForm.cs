@@ -13,22 +13,12 @@ namespace TopClock
 {
     public partial class TopClockForm : Form
     {
-        public const int WM_NCLBUTTONDOWN = 0xA1;
-        public const int HT_CAPTION = 0x2;
-
-        [DllImportAttribute("user32.dll")]
+        [DllImportAttribute("User32.dll")]
         public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
-        [DllImportAttribute("user32.dll")]
+        [DllImportAttribute("User32.dll")]
         public static extern bool ReleaseCapture();
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool Beep(uint dwFreq, uint dwDuration);
-        [DllImport("User32.dll")]
-        private static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
         [DllImport("User32.dll")]
         private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-        [DllImport("User32.dll")]
-        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
-
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
         [DllImport("User32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -49,11 +39,7 @@ namespace TopClock
         private Color originalTimerLabelInvertedForeColor = new Color();
         private Color originalTimerLabelBackColor = new Color();
 
-        private IntPtr shelltraywnd;
-        private IntPtr traynotifywnd;
         private IntPtr trayclockwclass;
-
-        int WM_PAINT = 15;
 
         public static List<IntPtr> GetChildWindows(IntPtr parent)
         {
@@ -67,7 +53,9 @@ namespace TopClock
             finally
             {
                 if (listHandle.IsAllocated)
+                {
                     listHandle.Free();
+                }
             }
             return result;
         }
@@ -81,7 +69,6 @@ namespace TopClock
                 throw new InvalidCastException("GCHandle Target could not be cast as List<IntPtr>");
             }
             list.Add(handle);
-            // You can modify this to check to see if you want to cancel the operation, then return a null here
             return true;
         }
 
@@ -107,18 +94,12 @@ namespace TopClock
             originalTimerLabelForeColor = g_timeLabel.ForeColor;
             originalTimerLabelBackColor = Color.Transparent;            
             originalTimerLabelInvertedForeColor = Color.FromArgb(g_timeLabel.ForeColor.ToArgb() ^ 0xffffff);
-
+            
             UpdateTimeLabel(timerTotalMinutes);
 
-            //shelltraywnd = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "shell_traywnd", string.Empty);
-            //traynotifywnd = FindWindowEx(shelltraywnd, IntPtr.Zero, "traynotifywnd", string.Empty);
-            //List<IntPtr> list = GetChildWindows(traynotifywnd);
-
             List<IntPtr> list = GetChildWindows(GetDesktopWindow());
-
-            //trayclockwclass = FindWindowEx(traynotifywnd, IntPtr.Zero, "TrayClockWClass", string.Empty);
-
             List<String> classed = new List<String>();
+
             foreach (IntPtr ptr in list)
             {
                 String classname = GetWindowClassName(ptr);
@@ -207,6 +188,7 @@ namespace TopClock
                 {
                     g_cbxStart.Text = "&Finished! Click Reset!";
                     g_cbxStart.Enabled = false;
+                    labelInvertColor = false;
 
                     g_timer.Interval = 500;
                     g_timer.Enabled = true;
@@ -250,29 +232,36 @@ namespace TopClock
         private void g_btnMinusH_Click(object sender, EventArgs e)
         {
             if (timerTotalMinutes>=60)
+            {
                 timerTotalMinutes -= 60;
+            }
+                
             UpdateTimeLabel(timerTotalMinutes);
             currentTimeM = timerTotalMinutes;
         }
 
         private void g_btnPlusM_Click(object sender, EventArgs e)
         {
-            timerTotalMinutes++;
+            uint hours = timerTotalMinutes / 60;
+            uint minutes = (timerTotalMinutes + 1) % 60;
+            timerTotalMinutes = (60 * hours) + minutes;
             UpdateTimeLabel(timerTotalMinutes);
             currentTimeM = timerTotalMinutes;
         }
 
         private void g_btnMinusM_Click(object sender, EventArgs e)
         {
-            if (timerTotalMinutes > 0)
-                timerTotalMinutes--;
-
+            uint hours = timerTotalMinutes / 60;
+            uint minutes = (timerTotalMinutes + 60 - 1) % 60;
+            timerTotalMinutes = (60 * hours) + minutes;
             UpdateTimeLabel(timerTotalMinutes);
             currentTimeM = timerTotalMinutes;
         }
 
         private void UpdateTimeLabel(uint inTotalMinutes)
         {
+            g_cbxStart.Enabled = inTotalMinutes > 0;
+
             uint totalHours = (uint)Math.Floor((double)inTotalMinutes / 60);
             uint totalMinutes = inTotalMinutes % 60;
 
@@ -301,7 +290,6 @@ namespace TopClock
         {
             // Display the form as top most form.
             TopMost = true;
-            TopLevel = true;
 
             // label in the origin
             g_timeLabel.Location = new Point(0, 0);
@@ -321,7 +309,6 @@ namespace TopClock
         {
             // Not anymore TopMost
             TopMost = false;
-            TopLevel = false;
 
             RestoreOriginalState();
         }
@@ -342,6 +329,8 @@ namespace TopClock
                 HideInterface();
             }
         }
+        private const int WM_NCLBUTTONDOWN = 0xA1;
+        private const int HT_CAPTION = 0x2;
 
         private void g_timeLabel_MouseDown(object sender, MouseEventArgs e)
         {
